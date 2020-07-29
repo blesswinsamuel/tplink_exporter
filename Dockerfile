@@ -1,4 +1,4 @@
-FROM golang:alpine as builder
+FROM --platform=$BUILDPLATFORM golang:alpine as builder
 
 # Download and install dependencies
 RUN apk update && apk add --no-cache git
@@ -9,7 +9,9 @@ WORKDIR $GOPATH/src/github.com/maesoser/tplink_exporter
 COPY . .
 
 # Compile it
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' .
+ARG TARGETOS
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -installsuffix cgo -ldflags '-extldflags "-static"' .
 
 # Create docker
 FROM scratch
