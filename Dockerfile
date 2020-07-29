@@ -1,19 +1,16 @@
-FROM --platform=$BUILDPLATFORM golang:alpine as builder
+# build stage
+FROM --platform=$BUILDPLATFORM golang:1.14-stretch AS build-env
 
-# Download and install dependencies
-RUN apk update && apk add --no-cache git
-RUN go get github.com/prometheus/client_golang/prometheus
+ADD . /src
+WORKDIR /src
 
-# Copy the code from the host
-WORKDIR $GOPATH/src/github.com/maesoser/tplink_exporter
-COPY . .
-
-# Compile it
+ENV CGO_ENABLED=0
 ARG TARGETOS
 ARG TARGETARCH
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o tplink_exporter
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o dnsmasq_exporter
 
-# Create docker
+# final stage
 FROM scratch
-COPY --from=builder /go/src/github.com/maesoser/tplink_exporter/tplink_exporter /app/
-ENTRYPOINT ["/app/tplink_exporter"]
+WORKDIR /app
+COPY --from=build-env /src/dnsmasq_exporter /app/
+ENTRYPOINT ["/app/dnsmasq_exporter"]
