@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/blesswinsamuel/tplink_exporter/macdb"
+	"github.com/blesswinsamuel/tplink_exporter/ipdb"
 	"github.com/blesswinsamuel/tplink_exporter/tplink"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -22,14 +22,14 @@ type routerCollector struct {
 	LANPackets   *prometheus.Desc
 
 	router *tplink.Router
-	macids macdb.MacDB
+	ips    ipdb.DB
 
 	mutex sync.Mutex
 }
 
 //You must create a constructor for you collector that
 //initializes every descriptor and returns a pointer to the collector
-func newRouterCollector(router *tplink.Router, macs macdb.MacDB) *routerCollector {
+func newRouterCollector(router *tplink.Router, ips ipdb.DB) *routerCollector {
 	c := routerCollector{}
 	c.txWANTraffic = prometheus.NewDesc(
 		"tplink_wan_tx_kbytes",
@@ -60,7 +60,7 @@ func newRouterCollector(router *tplink.Router, macs macdb.MacDB) *routerCollecto
 		[]string{"name", "ip", "mac"}, nil,
 	)
 
-	c.macids = macs
+	c.ips = ips
 	c.router = router
 
 	return &c
@@ -93,7 +93,7 @@ func (collector *routerCollector) scrape(ch chan<- prometheus.Metric) error {
 		return fmt.Errorf("Error getting LAN metrics: %v", err)
 	}
 	for _, client := range collector.router.Clients {
-		name := collector.macids.Lookup(client.MACAddr)
+		name := collector.ips.Lookup(client.IPAddr)
 		if len(name) != 0 {
 			client.Name = name
 		}

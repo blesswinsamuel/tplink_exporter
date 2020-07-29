@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/blesswinsamuel/tplink_exporter/macdb"
+	"github.com/blesswinsamuel/tplink_exporter/ipdb"
 	"github.com/blesswinsamuel/tplink_exporter/tplink"
 )
 
@@ -27,15 +27,15 @@ func main() {
 		GetEnvStr("TPLINK_ROUTER_ADDR", "192.168.0.1"),
 		"Router's address",
 	)
-	Pass := flag.String(
-		"w",
-		GetEnvStr("TPLINK_ROUTER_PASSWD", "admin"),
-		"Router's password",
-	)
 	User := flag.String(
 		"u",
 		GetEnvStr("TPLINK_ROUTER_USER", "admin"),
 		"Router's username",
+	)
+	Pass := flag.String(
+		"w",
+		GetEnvStr("TPLINK_ROUTER_PASSWD", "admin"),
+		"Router's password",
 	)
 	Port := flag.Int(
 		"p",
@@ -49,22 +49,22 @@ func main() {
 	)
 	Filename := flag.String(
 		"f",
-		GetEnvStr("TPLINK_ROUTER_MACS", "/etc/known_macs"),
-		"MAC Database",
+		GetEnvStr("TPLINK_ROUTER_IPS", "/etc/hosts"),
+		"IP Database - hosts file",
 	)
 	flag.Parse()
 
-	macids, err := macdb.Load(*Filename)
+	ips, err := ipdb.Load(*Filename)
 	if err != nil {
-		log.Println("Unable to load MAC database:", err)
+		log.Println("Unable to load IP database:", err)
 	} else {
-		log.Printf("%d custom MACs loaded\n", len(macids))
+		log.Printf("%d custom IPs loaded\n", len(ips))
 	}
 
 	router := tplink.NewRouter(*Address, *User, *Pass)
 	router.Verbose = *Verbose
 
-	c := newRouterCollector(router, macids)
+	c := newRouterCollector(router, ips)
 	prometheus.MustRegister(c)
 
 	http.Handle("/metrics", promhttp.Handler())

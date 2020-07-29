@@ -1,15 +1,14 @@
-package macdb
+package ipdb
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"strings"
 )
 
-type MacDB map[string]string
+type DB map[string]string
 
-func Load(filename string) (MacDB, error) {
+func Load(filename string) (DB, error) {
 	var macids = make(map[string]string)
 	if len(filename) == 0 {
 		return macids, nil
@@ -23,7 +22,7 @@ func Load(filename string) (MacDB, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		elements := strings.Fields(line)
-		if len(elements) == 2 {
+		if len(elements) >= 2 {
 			mac := strings.TrimSpace(elements[0])
 			mac = strings.ToUpper(strings.ReplaceAll(mac, ":", "-"))
 			ip := strings.TrimSpace(elements[1])
@@ -34,13 +33,13 @@ func Load(filename string) (MacDB, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	for mac, ip := range macids {
-		log.Printf("%s\t%s", mac, ip)
-	}
+	// for mac, ip := range macids {
+	// 	log.Printf("%s\t%s", mac, ip)
+	// }
 	return macids, nil
 }
 
-func (db MacDB) Lookup(mac string) string {
+func (db DB) Lookup(mac string) string {
 	if result, ok := db[mac]; ok {
 		return result
 	}
