@@ -21,16 +21,15 @@ type routerCollector struct {
 	LANLeases    *prometheus.Desc
 	LANPackets   *prometheus.Desc
 
-	router  *tplink.Router
-	macs    macdb.DB
-	vendors macdb.DB
+	router *tplink.Router
+	macids macdb.MacDB
 
 	mutex sync.Mutex
 }
 
 //You must create a constructor for you collector that
 //initializes every descriptor and returns a pointer to the collector
-func newRouterCollector(router *tplink.Router, macs, vendors macdb.DB) *routerCollector {
+func newRouterCollector(router *tplink.Router, macs macdb.MacDB) *routerCollector {
 	c := routerCollector{}
 	c.txWANTraffic = prometheus.NewDesc(
 		"tplink_wan_tx_kbytes",
@@ -61,8 +60,7 @@ func newRouterCollector(router *tplink.Router, macs, vendors macdb.DB) *routerCo
 		[]string{"name", "ip", "mac"}, nil,
 	)
 
-	c.macs = macs
-	c.vendors = vendors
+	c.macids = macs
 	c.router = router
 
 	return &c
@@ -95,7 +93,7 @@ func (collector *routerCollector) scrape(ch chan<- prometheus.Metric) error {
 		return fmt.Errorf("Error getting LAN metrics: %v", err)
 	}
 	for _, client := range collector.router.Clients {
-		name := macdb.Lookup(client.MACAddr, collector.macs, collector.vendors)
+		name := collector.macids.Lookup(client.MACAddr)
 		if len(name) != 0 {
 			client.Name = name
 		}
@@ -129,10 +127,10 @@ func (collector *routerCollector) Collect(ch chan<- prometheus.Metric) {
 
 	err := collector.scrape(ch)
 	if err != nil {
-		log.Println("Error scraping data for router\n", err)
+		log.Println("Error scraping data for router", err)
 		err := collector.scrape(ch)
 		if err != nil {
-			log.Println("Error scraping data for router\n", err)
+			log.Println("Error scraping data for router", err)
 		}
 	}
 

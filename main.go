@@ -54,18 +54,17 @@ func main() {
 	)
 	flag.Parse()
 
-	macs, vendors, err := macdb.Load(*Filename)
+	macids, err := macdb.Load(*Filename)
 	if err != nil {
 		log.Println("Unable to load MAC database:", err)
 	} else {
-		log.Printf("%d custom MACs loaded\n%d vendor MACs loaded\n",
-			len(macs), len(vendors))
+		log.Printf("%d custom MACs loaded\n", len(macids))
 	}
 
 	router := tplink.NewRouter(*Address, *User, *Pass)
 	router.Verbose = *Verbose
 
-	c := newRouterCollector(router, macs, vendors)
+	c := newRouterCollector(router, macids)
 	prometheus.MustRegister(c)
 
 	http.Handle("/metrics", promhttp.Handler())

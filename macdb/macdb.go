@@ -2,53 +2,47 @@ package macdb
 
 import (
 	"bufio"
-	"io"
+	"log"
 	"os"
 	"strings"
 )
 
-type DB map[string]string
+type MacDB map[string]string
 
-func Load(filename string) (DB, DB, error) {
-	var customMACs = make(map[string]string)
-	var vendorMACs = make(map[string]string)
+func Load(filename string) (MacDB, error) {
+	var macids = make(map[string]string)
 	if len(filename) == 0 {
-		return customMACs, vendorMACs, nil
+		return macids, nil
 	}
 	file, err := os.Open(filename)
 	if err != nil {
-		return customMACs, vendorMACs, err
+		return nil, err
 	}
 	defer file.Close()
-	reader := bufio.NewReader(file)
-	for {
-		line, err := reader.ReadString('\n')
-		line = strings.Replace(line, "\n", "", -1)
-		elements := strings.Split(line, "=")
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		elements := strings.Fields(line)
 		if len(elements) == 2 {
-			if key := strings.TrimSpace(elements[0]); len(key) > 0 {
-				mac := strings.TrimSpace(elements[1])
-				if len(key) == 8 {
-					vendorMACs[key] = mac
-				} else {
-					customMACs[key] = mac
-				}
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return customMACs, vendorMACs, err
+			mac := strings.TrimSpace(elements[0])
+			mac = strings.ToUpper(strings.ReplaceAll(mac, ":", "-"))
+			ip := strings.TrimSpace(elements[1])
+			macids[mac] = ip
 		}
 	}
-	return customMACs, vendorMACs, nil
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	for mac, ip := range macids {
+		log.Printf("%s\t%s", mac, ip)
+	}
+	return macids, nil
 }
 
-func Lookup(mac string, custom, vendor DB) string {
-	result := custom[mac]
-	if len(result) != 0 {
+func (db MacDB) Lookup(mac string) string {
+	if result, ok := db[mac]; ok {
 		return result
 	}
-	return vendor[mac[:8]]
+	return ""
 }
