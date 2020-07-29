@@ -79,6 +79,7 @@ func (collector *routerCollector) scrape(ch chan<- prometheus.Metric) error {
 	if err != nil {
 		return fmt.Errorf("Error logging: %v", err)
 	}
+	defer collector.router.Logout()
 	rx, tx, err := collector.router.GetWANTraffic()
 	if err != nil {
 		return fmt.Errorf("Error getting WAN metrics: %v", err)
@@ -116,7 +117,6 @@ func (collector *routerCollector) scrape(ch chan<- prometheus.Metric) error {
 
 	}
 	return nil
-	//router.Logout()
 }
 
 //Collect implements required collect function for all promehteus collectors
